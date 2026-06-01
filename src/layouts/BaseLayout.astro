@@ -1,11 +1,21 @@
 ---
+import { ClientRouter } from "astro:transitions";
+
 interface Props {
   title: string;
   description?: string;
 }
 
-const { title, description = "Think Tilted" } = Astro.props;
+const { title, description = "Think Tilted — web agency for small businesses" } = Astro.props;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? import.meta.env.PUBLIC_SITE_URL);
+const currentPath = Astro.url.pathname;
+
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/showcase", label: "Showcase" },
+  { href: "/contact", label: "Contact" },
+];
 ---
 
 <!doctype html>
@@ -15,26 +25,40 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? import.meta.env.P
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL.href} />
-    <title>{title}</title>
+    <title>{title} — Think Tilted</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <ClientRouter />
     <style>
       @import "../styles/global.css";
     </style>
   </head>
   <body class="min-h-dvh bg-paper text-ink font-sans">
     <header class="mx-auto max-w-5xl px-6 py-6 flex items-center justify-between">
-      <a href="/" class="font-display text-lg font-semibold tracking-tight">Think Tilted</a>
+      <a href="/" class="font-display text-xl font-semibold tracking-tight hover:text-clay transition-colors">
+        Think Tilted
+      </a>
       <nav class="flex gap-6 text-sm">
-        <a href="/" class="hover:text-clay">Home</a>
-        <a href="/about" class="hover:text-clay">About</a>
-        <a href="/contact" class="hover:text-clay">Contact</a>
+        {navLinks.map(({ href, label }) => (
+          <a
+            href={href}
+            class:list={[
+              "transition-colors hover:text-clay",
+              currentPath === href || (href !== "/" && currentPath.startsWith(href))
+                ? "text-clay font-medium"
+                : "text-ink-soft",
+            ]}
+          >
+            {label}
+          </a>
+        ))}
       </nav>
     </header>
     <main class="mx-auto max-w-5xl px-6">
       <slot />
     </main>
-    <footer class="mx-auto max-w-5xl px-6 py-12 text-sm text-ink-soft">
+    <footer class="mx-auto max-w-5xl px-6 py-12 mt-16 border-t border-paper-dim text-sm text-ink-muted flex items-center justify-between">
       <p>&copy; {new Date().getFullYear()} Think Tilted</p>
+      <p class="text-xs">Built with Astro + Tailwind</p>
     </footer>
   </body>
 </html>

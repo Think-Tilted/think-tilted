@@ -1,0 +1,334 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Primitives"
+  description="Responsive layout, interaction states, typography scale, live color tokens."
+>
+  <div class="py-16">
+    <a href="/showcase" class="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-clay transition-colors mb-12">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Showcase
+    </a>
+
+    <div class="animate-fade-up mb-20">
+      <p class="text-sm font-medium text-clay uppercase tracking-widest mb-4">The Craft</p>
+      <h1 class="font-display text-5xl sm:text-6xl font-semibold tracking-tight leading-tight max-w-2xl">
+        Primitives
+      </h1>
+      <p class="mt-5 text-lg text-ink-soft max-w-[48ch] leading-relaxed">
+        The building blocks. Resize the window. Click things. Change the palette.
+      </p>
+    </div>
+
+    <!-- ─── COLOR TOKENS ─────────────────────────────── -->
+    <section class="mb-20 border-t border-paper-dim pt-12">
+      <div class="flex items-center justify-between mb-8">
+        <p class="text-xs font-medium text-ink-muted uppercase tracking-widest">Live Color Tokens</p>
+        <div class="flex gap-2" id="palette-switcher">
+          {[
+            { id: "warm", label: "Warm" },
+            { id: "ocean", label: "Ocean" },
+            { id: "forest", label: "Forest" },
+            { id: "mono", label: "Mono" },
+          ].map(({ id, label }) => (
+            <button
+              class="palette-btn text-xs px-3 py-1.5 rounded-lg border transition-all"
+              data-palette={id}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Token preview cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8" id="token-swatches">
+        {[
+          { token: "ink", label: "Ink" },
+          { token: "accent", label: "Accent" },
+          { token: "paper", label: "Paper" },
+          { token: "paper-dim", label: "Paper Dim" },
+        ].map(({ token, label }) => (
+          <div class="token-swatch rounded-xl p-4 min-h-[80px] flex flex-col justify-between" data-token={token}>
+            <span class="text-xs font-medium uppercase tracking-widest opacity-50">{label}</span>
+            <span class="text-xs font-mono opacity-40 token-hex" />
+          </div>
+        ))}
+      </div>
+
+      <!-- Live preview component -->
+      <div class="rounded-2xl overflow-hidden border border-paper-dim" id="token-preview">
+        <div class="p-8 sm:p-12 token-preview-bg">
+          <p class="text-xs font-medium uppercase tracking-widest mb-4 token-preview-accent">Preview</p>
+          <h2 class="font-display text-3xl font-semibold mb-3 token-preview-ink">
+            The palette updates everywhere.
+          </h2>
+          <p class="max-w-[44ch] leading-relaxed mb-6 token-preview-soft">
+            Change the palette above and watch every color on this card update in real time.
+            One token. Whole site.
+          </p>
+          <div class="flex gap-3">
+            <button class="px-5 py-2.5 rounded-lg text-sm font-medium token-preview-btn-primary">
+              Primary
+            </button>
+            <button class="px-5 py-2.5 rounded-lg text-sm font-medium token-preview-btn-secondary">
+              Secondary
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── TYPOGRAPHY SCALE ──────────────────────────── -->
+    <section class="mb-20 border-t border-paper-dim pt-12">
+      <p class="text-xs font-medium text-ink-muted uppercase tracking-widest mb-8">Type Scale</p>
+      <div class="space-y-1">
+        {[
+          { size: "text-[96px]", label: "96", sample: "Aa" },
+          { size: "text-[64px]", label: "64", sample: "Display" },
+          { size: "text-[48px]", label: "48", sample: "Heading" },
+          { size: "text-[32px]", label: "32", sample: "Subheading" },
+          { size: "text-[20px]", label: "20", sample: "Large body — the workhorse." },
+          { size: "text-[16px]", label: "16", sample: "Body text. Readable at any size, on any screen." },
+          { size: "text-[13px]", label: "13", sample: "Caption, label, metadata. Small but intentional." },
+        ].map(({ size, label, sample }) => (
+          <div class="flex items-baseline gap-6 py-2 border-b border-paper-dim/50">
+            <span class="text-xs text-ink-muted w-8 shrink-0">{label}</span>
+            <span class={`font-display font-semibold leading-none ${size} text-ink`}>{sample}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ─── INTERACTION STATES ────────────────────────── -->
+    <section class="mb-20 border-t border-paper-dim pt-12">
+      <p class="text-xs font-medium text-ink-muted uppercase tracking-widest mb-8">Interaction States</p>
+
+      <!-- Hover effects -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="group p-5 rounded-xl border border-paper-dim hover:-translate-y-1 hover:shadow-lg transition-all duration-200 cursor-pointer">
+          <p class="text-xs text-ink-muted mb-2 uppercase tracking-widest">Lift</p>
+          <p class="font-display font-semibold">Hover me</p>
+        </div>
+        <div class="group p-5 rounded-xl border border-paper-dim hover:border-clay hover:bg-clay/5 transition-all duration-200 cursor-pointer">
+          <p class="text-xs text-ink-muted mb-2 uppercase tracking-widest">Color Shift</p>
+          <p class="font-display font-semibold group-hover:text-clay transition-colors">Hover me</p>
+        </div>
+        <div class="group p-5 rounded-xl border border-paper-dim overflow-hidden relative cursor-pointer">
+          <div class="absolute inset-0 bg-clay translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+          <div class="relative">
+            <p class="text-xs text-ink-muted group-hover:text-white/60 mb-2 uppercase tracking-widest transition-colors">Wipe</p>
+            <p class="font-display font-semibold group-hover:text-white transition-colors">Hover me</p>
+          </div>
+        </div>
+        <div class="group p-5 rounded-xl border border-paper-dim cursor-pointer">
+          <p class="text-xs text-ink-muted mb-2 uppercase tracking-widest">Underline</p>
+          <p class="font-display font-semibold">
+            <span class="relative inline-block">
+              Hover me
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-clay group-hover:w-full transition-all duration-300" />
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Button states -->
+      <div class="flex flex-wrap gap-3 items-center">
+        <button class="bg-clay text-white px-5 py-2.5 rounded-lg font-medium hover:bg-clay-light active:scale-95 transition-all text-sm">
+          Primary
+        </button>
+        <button class="border border-ink text-ink px-5 py-2.5 rounded-lg font-medium hover:bg-ink hover:text-paper active:scale-95 transition-all text-sm">
+          Secondary
+        </button>
+        <button class="text-clay font-medium px-5 py-2.5 rounded-lg hover:bg-clay/10 active:scale-95 transition-all text-sm">
+          Ghost
+        </button>
+        <button class="bg-clay text-white px-5 py-2.5 rounded-lg font-medium opacity-40 cursor-not-allowed text-sm">
+          Disabled
+        </button>
+        <button id="loading-btn" class="bg-clay text-white px-5 py-2.5 rounded-lg font-medium hover:bg-clay-light transition-all flex items-center gap-2 text-sm">
+          <span id="loading-text">Loading state</span>
+          <svg id="loading-spinner" class="w-4 h-4 hidden animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ─── RESPONSIVE LAYOUT ─────────────────────────── -->
+    <section class="mb-4 border-t border-paper-dim pt-12">
+      <div class="flex items-center justify-between mb-8">
+        <p class="text-xs font-medium text-ink-muted uppercase tracking-widest">Responsive Layout</p>
+        <p class="text-xs text-ink-muted">Resize the window</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { label: "1 col on mobile", span: "" },
+          { label: "2 col on tablet", span: "" },
+          { label: "3 col on desktop", span: "" },
+          { label: "Spans 2 on tablet", span: "sm:col-span-2 lg:col-span-1" },
+          { label: "Spans 2 on desktop", span: "lg:col-span-2" },
+          { label: "Always 1 col", span: "" },
+        ].map(({ label, span }) => (
+          <div class={`reveal p-5 rounded-xl border border-paper-dim ${span}`}>
+            <p class="text-xs text-ink-muted uppercase tracking-widest mb-1">{label}</p>
+            <div class="h-2 rounded-full bg-paper-dim mt-3" />
+            <div class="h-2 rounded-full bg-paper-dim mt-2 w-3/4" />
+          </div>
+        ))}
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  // ── Palette switcher ──────────────────────────────────────────
+  const palettes: Record<string, {
+    ink: string; accent: string; paper: string; paperDim: string;
+    soft: string; btnPrimary: string; btnPrimaryText: string;
+    btnSecondary: string; btnSecondaryText: string;
+  }> = {
+    warm: {
+      ink: "#1a1a1a", accent: "#b0835c", paper: "#fafaf8", paperDim: "#e8e6e1",
+      soft: "#666", btnPrimary: "#b0835c", btnPrimaryText: "#fff",
+      btnSecondary: "transparent", btnSecondaryText: "#1a1a1a",
+    },
+    ocean: {
+      ink: "#0f2340", accent: "#2a7f8a", paper: "#e8f4f6", paperDim: "#c8dfe3",
+      soft: "#3a5a6a", btnPrimary: "#2a7f8a", btnPrimaryText: "#fff",
+      btnSecondary: "transparent", btnSecondaryText: "#0f2340",
+    },
+    forest: {
+      ink: "#1e3a2a", accent: "#6b8f71", paper: "#f7f4ee", paperDim: "#d4cfc6",
+      soft: "#4a6a52", btnPrimary: "#6b8f71", btnPrimaryText: "#fff",
+      btnSecondary: "transparent", btnSecondaryText: "#1e3a2a",
+    },
+    mono: {
+      ink: "#0a0a0a", accent: "#3a3a3a", paper: "#f8f8f8", paperDim: "#e0e0e0",
+      soft: "#555", btnPrimary: "#0a0a0a", btnPrimaryText: "#fff",
+      btnSecondary: "transparent", btnSecondaryText: "#0a0a0a",
+    },
+  };
+
+  const swatchColors: Record<string, (p: typeof palettes[string]) => string> = {
+    ink: (p) => p.ink,
+    accent: (p) => p.accent,
+    paper: (p) => p.paper,
+    "paper-dim": (p) => p.paperDim,
+  };
+
+  function applyPalette(id: string) {
+    const p = palettes[id];
+    if (!p) return;
+
+    // Update swatch cards
+    document.querySelectorAll<HTMLElement>(".token-swatch").forEach((el) => {
+      const token = el.dataset.token ?? "";
+      const color = swatchColors[token]?.(p) ?? "#ccc";
+      el.style.backgroundColor = color;
+      const hex = el.querySelector<HTMLElement>(".token-hex");
+      if (hex) hex.textContent = color;
+      // Flip text color for light swatches
+      const isLight = ["paper", "paper-dim"].includes(token);
+      el.style.color = isLight ? p.ink : "#fff";
+    });
+
+    // Update preview card
+    const bg = document.querySelector<HTMLElement>(".token-preview-bg");
+    const accent = document.querySelector<HTMLElement>(".token-preview-accent");
+    const ink = document.querySelector<HTMLElement>(".token-preview-ink");
+    const soft = document.querySelector<HTMLElement>(".token-preview-soft");
+    const btnPrimary = document.querySelector<HTMLElement>(".token-preview-btn-primary");
+    const btnSecondary = document.querySelector<HTMLElement>(".token-preview-btn-secondary");
+
+    if (bg) bg.style.backgroundColor = p.paper;
+    if (accent) { accent.style.color = p.accent; }
+    if (ink) ink.style.color = p.ink;
+    if (soft) soft.style.color = p.soft;
+    if (btnPrimary) {
+      btnPrimary.style.backgroundColor = p.btnPrimary;
+      btnPrimary.style.color = p.btnPrimaryText;
+    }
+    if (btnSecondary) {
+      btnSecondary.style.backgroundColor = p.btnSecondary;
+      btnSecondary.style.color = p.btnSecondaryText;
+      btnSecondary.style.border = `1px solid ${p.paperDim}`;
+    }
+
+    // Update active button state
+    document.querySelectorAll<HTMLElement>(".palette-btn").forEach((btn) => {
+      const isActive = btn.dataset.palette === id;
+      btn.style.backgroundColor = isActive ? p.accent : "transparent";
+      btn.style.color = isActive ? "#fff" : p.soft;
+      btn.style.borderColor = isActive ? p.accent : p.paperDim;
+    });
+  }
+
+  function initPalette() {
+    document.querySelectorAll<HTMLElement>(".palette-btn").forEach((btn) => {
+      const fresh = btn.cloneNode(true) as HTMLElement;
+      btn.parentNode!.replaceChild(fresh, btn);
+      fresh.addEventListener("click", () => applyPalette(fresh.dataset.palette ?? "warm"));
+    });
+    applyPalette("warm");
+  }
+
+  // ── Loading button ────────────────────────────────────────────
+  function initLoadingBtn() {
+    const btn = document.getElementById("loading-btn");
+    const text = document.getElementById("loading-text");
+    const spinner = document.getElementById("loading-spinner");
+    if (!btn || !text || !spinner) return;
+
+    let loading = false;
+    const fresh = btn.cloneNode(true) as HTMLElement;
+    btn.parentNode!.replaceChild(fresh, btn);
+
+    fresh.addEventListener("click", () => {
+      if (loading) return;
+      loading = true;
+      const t = fresh.querySelector("#loading-text")!;
+      const s = fresh.querySelector("#loading-spinner")!;
+      t.textContent = "Loading...";
+      s.classList.remove("hidden");
+      setTimeout(() => {
+        t.textContent = "Done";
+        s.classList.add("hidden");
+        setTimeout(() => {
+          t.textContent = "Loading state";
+          loading = false;
+        }, 1500);
+      }, 2000);
+    });
+  }
+
+  // ── Scroll reveals ────────────────────────────────────────────
+  function initReveal() {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08 }
+    );
+    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+  }
+
+  initPalette();
+  initLoadingBtn();
+  initReveal();
+  document.addEventListener("astro:page-load", () => {
+    initPalette();
+    initLoadingBtn();
+    initReveal();
+  });
+</script>

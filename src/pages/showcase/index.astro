@@ -1,0 +1,113 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const work = [
+  {
+    href: "/showcase/blackbird",
+    title: "Blackbird Supper Club",
+    category: "Restaurant",
+    desc: "Warm, dark, editorial. A neighborhood restaurant with a story worth telling.",
+    bg: "#1c1410",
+    accent: "#b0835c",
+  },
+  {
+    href: "/showcase/studio",
+    title: "Meridian Studio",
+    category: "Creative Agency",
+    desc: "Minimal, precise, monochrome. A studio that lets the work speak.",
+    bg: "#0f0f0f",
+    accent: "#e8e8e8",
+  },
+  {
+    href: "/showcase/foundry",
+    title: "The Foundry Fund",
+    category: "Nonprofit / Fundraiser",
+    desc: "Bold, mission-driven, high contrast. A cause that demands to be seen.",
+    bg: "#1a2e1a",
+    accent: "#5a9e5a",
+  },
+  {
+    href: "/showcase/hollow",
+    title: "The Hollow",
+    category: "Music Venue",
+    desc: "Gritty, textured, alive. A room where something always happens.",
+    bg: "#1a1020",
+    accent: "#9b6fd4",
+  },
+];
+---
+
+<BaseLayout
+  title="Showcase"
+  description="If you can design it, we can build it."
+>
+  <section class="py-20">
+    <!-- Statement -->
+    <div class="animate-fade-up max-w-3xl mb-20">
+      <h1 class="font-display text-5xl sm:text-6xl font-semibold tracking-tight leading-tight">
+        If you can design it,<br />we can build it.
+      </h1>
+      <p class="mt-6 text-xl text-ink-soft leading-relaxed max-w-[48ch]">
+        Four clients. Four completely different worlds.
+        Same stack, same speed, same quality of build.
+      </p>
+    </div>
+
+    <!-- Work grid -->
+    <div class="mb-6">
+      <p class="text-xs font-medium text-ink-muted uppercase tracking-widest mb-6">The Work</p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        {work.map((item) => (
+          <a
+            href={item.href}
+            class="group relative flex flex-col justify-end rounded-2xl overflow-hidden min-h-[280px] hover:-translate-y-0.5 transition-all duration-300 hover:shadow-2xl"
+            style={`background-color: ${item.bg}`}
+          >
+            <!-- Gradient -->
+            <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)" />
+
+            <!-- Accent line -->
+            <div class="absolute top-0 left-0 right-0 h-px opacity-30" style={`background-color: ${item.accent}`} />
+
+            <div class="relative p-7">
+              <p class="text-xs font-medium uppercase tracking-widest mb-2" style={`color: ${item.accent}`}>
+                {item.category}
+              </p>
+              <h2 class="font-display text-2xl font-semibold text-white leading-tight mb-2">
+                {item.title}
+              </h2>
+              <p class="text-sm text-white/50 leading-relaxed mb-4">{item.desc}</p>
+              <span class="inline-flex items-center gap-1 text-sm text-white/40 group-hover:text-white transition-colors duration-200">
+                View
+                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Craft link -->
+    <div class="mt-12 border-t border-paper-dim pt-10">
+      <p class="text-xs font-medium text-ink-muted uppercase tracking-widest mb-6">The Craft</p>
+      <a
+        href="/showcase/craft"
+        class="group flex items-center justify-between p-6 rounded-2xl border border-paper-dim hover:border-clay transition-colors"
+      >
+        <div>
+          <h2 class="font-display text-xl font-semibold mb-1 group-hover:text-clay transition-colors">
+            Primitives
+          </h2>
+          <p class="text-sm text-ink-soft">
+            Responsive layout, interaction states, typography scale, live color tokens.
+          </p>
+        </div>
+        <svg class="w-5 h-5 text-ink-muted group-hover:text-clay group-hover:translate-x-1 transition-all shrink-0 ml-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,129 @@
+---
+import ShowcaseLayout from "../../layouts/ShowcaseLayout.astro";
+
+const shows = [
+  { date: "FRI", day: "6", artist: "Waxahatchee", support: "Palehound", price: "$22", status: "on sale" },
+  { date: "SAT", day: "7", artist: "Mdou Moctar", support: "Mariam Diallo", price: "$25", status: "on sale" },
+  { date: "THU", day: "12", artist: "Squirrel Flower", support: "", price: "$18", status: "on sale" },
+  { date: "SAT", day: "14", artist: "Dry Cleaning", support: "Dehd", price: "$28", status: "sold out" },
+  { date: "THU", day: "19", artist: "Bonny Light Horseman", support: "", price: "$24", status: "on sale" },
+  { date: "SAT", day: "21", artist: "Mdou Moctar", support: "Mariam Diallo", price: "$25", status: "few left" },
+];
+---
+
+<ShowcaseLayout title="The Hollow" description="A music venue.">
+  <div style="background-color: #0d0a14; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; overflow-x: hidden">
+
+    <!-- THE POSTER — full viewport, typeset like a bill poster -->
+    <div id="poster" style="min-height: 100vh; position: relative; display: flex; flex-direction: column; overflow: hidden">
+
+      <!-- Venue name — vertical, left edge -->
+      <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 3rem; display: flex; align-items: center; justify-content: center; border-right: 1px solid rgba(255,255,255,0.06); z-index: 2">
+        <p style="writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); font-size: 9px; font-weight: 700; letter-spacing: 0.4em; text-transform: uppercase; color: rgba(255,255,255,0.2); white-space: nowrap">
+          The Hollow &nbsp;&mdash;&nbsp; Portland, OR
+        </p>
+      </div>
+
+      <!-- Year — vertical, right edge -->
+      <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 3rem; display: flex; align-items: center; justify-content: center; border-left: 1px solid rgba(255,255,255,0.06); z-index: 2">
+        <p style="writing-mode: vertical-rl; font-size: 9px; font-weight: 700; letter-spacing: 0.4em; text-transform: uppercase; color: rgba(255,255,255,0.2); white-space: nowrap">
+          Est. 2011 &nbsp;&mdash;&nbsp; 300 Cap &nbsp;&mdash;&nbsp; All Ages
+        </p>
+      </div>
+
+      <!-- Bill poster content -->
+      <div style="flex: 1; padding: 4vh 5rem; display: flex; flex-direction: column; justify-content: space-between">
+
+        <!-- Top: month header -->
+        <div style="text-align: center; padding-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.08)">
+          <p style="font-size: 10px; font-weight: 700; letter-spacing: 0.5em; text-transform: uppercase; color: rgba(155,111,212,0.6)">June 2025 &nbsp;&middot;&nbsp; Live Music Every Night</p>
+        </div>
+
+        <!-- Show bill — stacked, sizes vary by headliner -->
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 3vh 0">
+          {shows.map(({ date, day, artist, support, price, status }, i) => (
+            <div class="show-row" style={`display: flex; align-items: baseline; gap: 1.5rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.15s; ${i === 0 ? "padding-bottom: 1.5rem; margin-bottom: 0.5rem" : ""}`}>
+              <!-- Date block -->
+              <div style="width: 3.5rem; flex-shrink: 0; text-align: right">
+                <p style="font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.25); line-height: 1">{date}</p>
+                <p style={`font-size: ${i === 0 ? "28px" : "18px"}; font-weight: 900; color: rgba(155,111,212,0.7); line-height: 1`}>{day}</p>
+              </div>
+              <!-- Artist name — size varies by position -->
+              <div style="flex: 1; min-width: 0">
+                <p style={`font-weight: 900; letter-spacing: -0.03em; line-height: 0.9; color: ${status === "sold out" ? "rgba(255,255,255,0.2)" : "#f0ecf8"}; font-size: ${i === 0 ? "clamp(40px, 7vw, 80px)" : i === 1 ? "clamp(28px, 4.5vw, 52px)" : i === 2 ? "clamp(22px, 3.5vw, 40px)" : "clamp(18px, 2.5vw, 30px)"}`}>
+                  {artist}
+                </p>
+                {support && (
+                  <p style="font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 3px">w/ {support}</p>
+                )}
+              </div>
+              <!-- Price + status -->
+              <div style="flex-shrink: 0; text-align: right">
+                <p style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5)">{price}</p>
+                <p style={`font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; ${status === "sold out" ? "color: rgba(255,255,255,0.2)" : status === "few left" ? "color: #d4a843" : "color: #9b6fd4"}`}>{status}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <!-- Bottom: email signup — floating in the poster -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap">
+          <p style="font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 0.1em; text-transform: uppercase">Get on the list</p>
+          <div style="display: flex; gap: 0; flex: 1; max-width: 360px">
+            <input type="email" placeholder="your@email.com" style="flex: 1; padding: 10px 14px; background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-right: none; color: rgba(255,255,255,0.8); font-size: 13px; outline: none; min-width: 0" />
+            <button style="background-color: #9b6fd4; color: white; padding: 10px 18px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: none; cursor: pointer; flex-shrink: 0">
+              Subscribe
+            </button>
+          </div>
+          <p style="font-size: 9px; color: rgba(255,255,255,0.15); letter-spacing: 0.1em; text-transform: uppercase">1847 SE Morrison St</p>
+        </div>
+      </div>
+
+      <!-- Tear line — the visual break before the calendar -->
+      <div id="tear-line" style="position: relative; height: 60px; overflow: hidden; cursor: pointer" title="Scroll for full calendar">
+        <svg viewBox="0 0 1200 60" preserveAspectRatio="none" style="width: 100%; height: 100%; display: block">
+          <path id="tear-path" d="M0,0 L0,30 Q50,55 100,30 Q150,5 200,30 Q250,55 300,30 Q350,5 400,30 Q450,55 500,30 Q550,5 600,30 Q650,55 700,30 Q750,5 800,30 Q850,55 900,30 Q950,5 1000,30 Q1050,55 1100,30 Q1150,5 1200,30 L1200,0 Z" fill="rgba(155,111,212,0.15)" />
+          <path d="M0,30 Q50,55 100,30 Q150,5 200,30 Q250,55 300,30 Q350,5 400,30 Q450,55 500,30 Q550,5 600,30 Q650,55 700,30 Q750,5 800,30 Q850,55 900,30 Q950,5 1000,30 Q1050,55 1100,30 Q1150,5 1200,30" fill="none" stroke="rgba(155,111,212,0.4)" stroke-width="1.5" />
+        </svg>
+        <p style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 9px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(155,111,212,0.5); white-space: nowrap">
+          ↓ &nbsp; Full Calendar &nbsp; ↓
+        </p>
+      </div>
+    </div>
+
+    <!-- CALENDAR — below the tear -->
+    <div style="background-color: #1a1424; padding: 6vh 5rem">
+      <div style="max-width: 700px; margin: 0 auto">
+        <p style="font-size: 10px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(155,111,212,0.5); margin-bottom: 2.5rem; text-align: center">July 2025</p>
+        {[
+          { date: "SAT JUL 5", artist: "Hand Habits", price: "$18", status: "on sale" },
+          { date: "FRI JUL 11", artist: "Hurray for the Riff Raff", price: "$22", status: "on sale" },
+          { date: "SAT JUL 12", artist: "Indigo De Souza", price: "$20", status: "few left" },
+          { date: "THU JUL 17", artist: "Ratboys", price: "$16", status: "on sale" },
+          { date: "FRI JUL 25", artist: "Faye Webster", price: "$30", status: "sold out" },
+          { date: "SAT JUL 26", artist: "Faye Webster", price: "$30", status: "sold out" },
+        ].map(({ date, artist, price, status }) => (
+          <div style="display: flex; align-items: center; gap: 1.5rem; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05)">
+            <p style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.25); width: 80px; flex-shrink: 0">{date}</p>
+            <p style={`font-size: 18px; font-weight: 700; flex: 1; ${status === "sold out" ? "color: rgba(255,255,255,0.2)" : "color: #f0ecf8"}`}>{artist}</p>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.4)">{price}</p>
+            <p style={`font-size: 9px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; width: 60px; text-align: right; ${status === "sold out" ? "color: rgba(255,255,255,0.2)" : status === "few left" ? "color: #d4a843" : "color: #9b6fd4"}`}>{status}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <footer style="background-color: #0d0a14; padding: 1.5rem 5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05)">
+      <p style="font-size: 10px; color: rgba(255,255,255,0.2)">&copy; 2025 The Hollow &nbsp;&middot;&nbsp; Portland, OR</p>
+      <p style="font-size: 10px; color: rgba(255,255,255,0.15)">Built by <a href="/" style="color: #9b6fd4; text-decoration: none">Think Tilted</a></p>
+    </footer>
+  </div>
+</ShowcaseLayout>
+
+<style>
+  .show-row:hover {
+    background-color: rgba(155, 111, 212, 0.04);
+    padding-left: 0.5rem;
+    transition: all 0.15s ease;
+  }
+</style>
