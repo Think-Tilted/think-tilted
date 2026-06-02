@@ -13,7 +13,6 @@ const currentPath = Astro.url.pathname;
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
 ];
 ---
 
@@ -55,7 +54,7 @@ const navLinks = [
     <main class="mx-auto w-full max-w-5xl flex-1 px-6">
       <slot />
     </main>
-    <footer class="mx-auto w-full max-w-5xl px-6 py-12 mt-16 border-t border-paper-dim text-sm text-ink-muted flex items-center justify-between">
+    <footer class="mx-auto w-full max-w-5xl px-6 py-8 border-t border-paper-dim text-sm text-ink-muted flex items-center justify-between">
       <p>&copy; {new Date().getFullYear()} Think Tilted</p>
       <nav class="flex items-center gap-5" aria-label="Social">
         <a
