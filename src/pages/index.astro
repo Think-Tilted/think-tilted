@@ -2,90 +2,14 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout
-  title="Think Tilted"
-  description="Think Tilted builds fast, focused websites for small businesses. No bloat, no templates, no surprises."
->
-  <!-- Hero -->
-  <section class="py-20 lg:py-28 animate-fade-up">
-    <p class="text-sm font-medium text-clay uppercase tracking-widest mb-4">Web Agency</p>
-    <h1 class="font-display text-5xl font-semibold tracking-tight text-ink sm:text-6xl lg:text-7xl leading-tight">
+<BaseLayout title="Think Tilted">
+  <section class="py-16 lg:py-24">
+    <h1 class="font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl lg:text-6xl">
       Think Tilted
     </h1>
-    <p class="mt-6 max-w-[48ch] text-xl text-ink-soft leading-relaxed">
-      We build fast, focused websites for small businesses.
-      No bloat. No templates. No surprises.
+    <p class="mt-6 max-w-[52ch] text-lg text-ink-soft">
+      Welcome to Think Tilted. This is a starter site — replace this content
+      with your own.
     </p>
-    <div class="mt-8 flex flex-wrap gap-3">
-      <a href="/showcase" class="inline-flex items-center gap-2 bg-clay text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-clay-light transition-colors">
-        See what we can do
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </a>
-      <a href="/about" class="inline-flex items-center gap-2 border border-paper-dim text-ink px-5 py-2.5 rounded-lg text-sm font-medium hover:border-clay hover:text-clay transition-colors">
-        About us
-      </a>
-    </div>
-  </section>
-
-  <!-- Value props -->
-  <section class="mt-4 grid gap-4 sm:grid-cols-3">
-    {[
-      {
-        label: "Fast by default",
-        desc: "Static HTML served from a CDN. Loads in milliseconds. No server, no database, no waiting.",
-      },
-      {
-        label: "Built to last",
-        desc: "Proven tools, clean code, full documentation. The next developer can open it and understand it immediately.",
-      },
-      {
-        label: "Yours to own",
-        desc: "You get the repo, the domain, the hosting account. No lock-in, no monthly platform fees, no hostages.",
-      },
-    ].map((item) => (
-      <div class="p-6 rounded-xl border border-paper-dim">
-        <h2 class="font-display font-semibold mb-2">{item.label}</h2>
-        <p class="text-sm text-ink-soft leading-relaxed">{item.desc}</p>
-      </div>
-    ))}
-  </section>
-
-  <!-- Showcase teaser -->
-  <section class="mt-20 py-12 px-8 rounded-2xl border border-paper-dim text-center reveal">
-    <p class="text-sm font-medium text-clay uppercase tracking-widest mb-3">Stack Showcase</p>
-    <h2 class="font-display text-3xl font-semibold tracking-tight mb-3">
-      See the stack in action
-    </h2>
-    <p class="text-ink-soft max-w-[44ch] mx-auto mb-8">
-      Dynamic routes, page transitions, interactive islands, content collections,
-      and a full responsive client page — all in one tour.
-    </p>
-    <a href="/showcase" class="inline-flex items-center gap-2 bg-clay text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-clay-light transition-colors">
-      Open the showcase
-      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-    </a>
   </section>
 </BaseLayout>
-
-<script>
-  function initReveal() {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-  }
-  initReveal();
-  document.addEventListener("astro:page-load", initReveal);
-</script>
