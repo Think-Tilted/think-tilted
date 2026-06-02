@@ -7,9 +7,8 @@
   --color-paper: #fafaf8;
   --color-paper-dim: #e8e6e1;
   --color-paper-dark: #d4d1cb;
-  --color-clay: #b0835c;
-  --color-clay-light: #c9a07e;
-  --color-sage: #6b8f71;
+  --color-clay: #222124;
+  --color-clay-light: #444444;
   --font-display: "Georgia", "Times New Roman", serif;
   --font-sans: system-ui, -apple-system, sans-serif;
 }

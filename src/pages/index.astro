@@ -2,14 +2,47 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Think Tilted">
-  <section class="py-16 lg:py-24">
-    <h1 class="font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl lg:text-6xl">
-      Think Tilted
-    </h1>
-    <p class="mt-6 max-w-[52ch] text-lg text-ink-soft">
-      Welcome to Think Tilted. This is a starter site — replace this content
-      with your own.
-    </p>
+<BaseLayout
+  title="Think Tilted"
+  description="Think Tilted — a brand and web studio building fast, focused identities and websites for small businesses."
+>
+  <section class="relative h-full min-h-[60vh] flex flex-col justify-center py-12">
+    <div class="relative w-full max-w-2xl animate-fade-up" style="perspective: 1000px;">
+      <img
+        id="tilt-mark"
+        src="/Tilted_Main.svg"
+        alt="Think Tilted"
+        class="w-full"
+      />
+    </div>
   </section>
 </BaseLayout>
+
+<style>
+  #tilt-mark {
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 0.4s ease-out;
+    will-change: transform;
+  }
+</style>
+
+<script>
+  // Subtle cursor tilt — the wordmark leans gently toward the cursor.
+  function initTilt() {
+    const mark = document.querySelector<HTMLElement>("#tilt-mark");
+    if (!mark) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    function onMove(e: MouseEvent) {
+      const px = e.clientX / window.innerWidth - 0.5;
+      const py = e.clientY / window.innerHeight - 0.5;
+      mark!.style.setProperty("--ry", `${px * 16}deg`);
+      mark!.style.setProperty("--rx", `${-py * 16}deg`);
+    }
+
+    window.addEventListener("mousemove", onMove);
+  }
+
+  initTilt();
+  document.addEventListener("astro:page-load", initTilt);
+</script>
