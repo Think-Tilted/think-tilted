@@ -1,0 +1,22 @@
+project_id = "think-tilted"
+
+# Auth hardening. These mirror the secure defaults for an agency-provisioned site:
+# admins are seeded by the migration, not self-served. See SECURITY.md.
+[auth]
+# No public self-signup — the only account is the admin the scaffold created.
+enable_signup = false
+# Reasonable password floor; raise per-client as needed.
+minimum_password_length = 12
+
+[auth.email]
+# No email self-signup either.
+enable_signup = false
+# Require verified emails before a session is granted.
+enable_confirmations = true
+# Require recent re-auth to change password.
+secure_password_change = true
+
+[auth.mfa.totp]
+# Allow admins to enroll a TOTP authenticator app.
+enroll_enabled = true
+verify_enabled = true
