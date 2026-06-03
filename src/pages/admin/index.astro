@@ -1,0 +1,129 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import StatusPill from "../../components/StatusPill.astro";
+import { requireAdmin } from "../../lib/admin-auth";
+import {
+  listLeads,
+  listClients,
+  listProjects,
+  formatPrice,
+  formatDate,
+  projectTypeLabel,
+} from "../../lib/crm";
+
+export const prerender = false;
+
+const gate = await requireAdmin(Astro.request, Astro.cookies, (p) => Astro.redirect(p));
+if (gate instanceof Response) return gate;
+const { supabase, email } = gate;
+
+// Sign-out is posted here from the layout header on every admin page.
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  if (String(form.get("intent")) === "signout") {
+    await supabase.auth.signOut();
+    return Astro.redirect("/login");
+  }
+}
+
+const [leads, clients, projects] = await Promise.all([
+  listLeads(supabase),
+  listClients(supabase),
+  listProjects(supabase),
+]);
+
+const newLeads = leads.filter((l) => l.status === "new");
+const liveProjects = projects.filter((p) => p.status === "live");
+const pipeline = projects
+  .filter((p) => p.status !== "archived")
+  .reduce((sum, p) => sum + (p.build_price ?? 0), 0);
+
+const stats = [
+  { label: "New leads", value: String(newLeads.length), href: "/admin/leads" },
+  { label: "Clients", value: String(clients.length), href: "/admin/clients" },
+  { label: "Live sites", value: String(liveProjects.length), href: "/admin/projects" },
+  { label: "Pipeline value", value: formatPrice(pipeline), href: "/admin/projects" },
+];
+---
+
+<AdminLayout title="Overview" email={email} active="overview">
+  <h1 class="font-display text-2xl font-semibold tracking-tight text-ink">
+    Overview
+  </h1>
+
+  <div class="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-paper-dim bg-paper-dim lg:grid-cols-4">
+    {
+      stats.map((s) => (
+        <a href={s.href} class="bg-paper px-5 py-6 transition-colors hover:bg-paper-dim/40">
+          <p class="text-3xl font-semibold text-ink">{s.value}</p>
+          <p class="mt-1 text-sm text-ink-soft">{s.label}</p>
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="mt-10 grid gap-10 lg:grid-cols-2">
+    <!-- Latest leads -->
+    <section>
+      <div class="flex items-baseline justify-between">
+        <h2 class="font-display text-lg font-semibold text-ink">Latest leads</h2>
+        <a href="/admin/leads" class="text-sm text-ink-soft hover:text-clay">All leads →</a>
+      </div>
+      {
+        leads.length === 0 ? (
+          <p class="mt-4 text-sm text-ink-muted">No leads yet.</p>
+        ) : (
+          <ul class="mt-4 divide-y divide-paper-dim">
+            {leads.slice(0, 5).map((lead) => (
+              <li class="flex items-center justify-between gap-4 py-3">
+                <div class="min-w-0">
+                  <p class="truncate font-medium text-ink">{lead.name}</p>
+                  <p class="truncate text-sm text-ink-muted">
+                    {projectTypeLabel(lead.project_type)} · {formatDate(lead.created_at)}
+                  </p>
+                </div>
+                <StatusPill
+                  label={lead.status}
+                  tone={lead.status === "new" ? "warm" : lead.status === "won" ? "good" : "neutral"}
+                />
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+
+    <!-- Active projects -->
+    <section>
+      <div class="flex items-baseline justify-between">
+        <h2 class="font-display text-lg font-semibold text-ink">Active projects</h2>
+        <a href="/admin/projects" class="text-sm text-ink-soft hover:text-clay">All projects →</a>
+      </div>
+      {
+        projects.length === 0 ? (
+          <p class="mt-4 text-sm text-ink-muted">No projects yet.</p>
+        ) : (
+          <ul class="mt-4 divide-y divide-paper-dim">
+            {projects
+              .filter((p) => p.status !== "archived")
+              .slice(0, 5)
+              .map((project) => (
+                <li class="flex items-center justify-between gap-4 py-3">
+                  <div class="min-w-0">
+                    <p class="truncate font-medium text-ink">{project.name}</p>
+                    <p class="truncate text-sm text-ink-muted">
+                      Tier {project.tier} · {formatPrice(project.build_price)}
+                    </p>
+                  </div>
+                  <StatusPill
+                    label={project.status}
+                    tone={project.status === "live" ? "good" : project.status === "building" ? "active" : "neutral"}
+                  />
+                </li>
+              ))}
+          </ul>
+        )
+      }
+    </section>
+  </div>
+</AdminLayout>

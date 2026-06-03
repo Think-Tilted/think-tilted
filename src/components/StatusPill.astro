@@ -1,0 +1,27 @@
+---
+// A small status badge. The palette stays within the site's muted range —
+// no neon dashboard colors. `tone` picks the accent.
+interface Props {
+  label: string;
+  tone: "neutral" | "active" | "warm" | "good" | "faded";
+}
+
+const { label, tone } = Astro.props;
+
+const tones: Record<Props["tone"], string> = {
+  neutral: "bg-paper-dim text-ink-soft",
+  active: "bg-clay text-paper",
+  warm: "bg-clay/10 text-clay ring-1 ring-clay/20",
+  good: "bg-ink text-paper",
+  faded: "bg-transparent text-ink-muted ring-1 ring-paper-dark",
+};
+---
+
+<span
+  class:list={[
+    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
+    tones[tone],
+  ]}
+>
+  {label}
+</span>

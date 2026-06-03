@@ -1,0 +1,120 @@
+---
+// Chrome for the internal back-office. Deliberately plainer than the public
+// site: a left rail of sections, the signed-in email, and a sign-out. Every
+// admin page is SSR + gated, so this layout assumes a known user.
+interface Props {
+  title: string;
+  email: string;
+  active: "overview" | "leads" | "clients" | "projects";
+}
+
+const { title, email, active } = Astro.props;
+
+// A one-shot confirmation banner. Mutation pages redirect back with
+// ?flash=<message>; we surface it here and strip it from the URL client-side
+// so a refresh doesn't repeat it. One choke point for every admin page.
+const flash = Astro.url.searchParams.get("flash");
+
+const sections = [
+  { key: "overview", href: "/admin", label: "Overview" },
+  { key: "leads", href: "/admin/leads", label: "Leads" },
+  { key: "clients", href: "/admin/clients", label: "Clients" },
+  { key: "projects", href: "/admin/projects", label: "Projects" },
+] as const;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — Think Tilted back office</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      @import "../styles/global.css";
+    </style>
+  </head>
+  <body class="min-h-dvh bg-paper text-ink font-sans">
+    <div class="mx-auto flex min-h-dvh w-full max-w-6xl flex-col md:flex-row">
+      <!-- Rail -->
+      <aside class="border-b border-paper-dim md:w-56 md:shrink-0 md:border-b-0 md:border-r">
+        <div class="flex items-center justify-between px-6 py-6 md:block">
+          <a href="/" class="inline-flex items-center gap-2">
+            <img src="/favicon.svg" alt="" class="h-7 w-auto" />
+            <span class="font-display text-lg font-semibold tracking-tight">Back office</span>
+          </a>
+        </div>
+        <nav class="flex gap-1 overflow-x-auto px-4 pb-4 md:flex-col md:gap-0.5 md:px-3">
+          {
+            sections.map(({ key, href, label }) => (
+              <a
+                href={href}
+                aria-current={active === key ? "page" : undefined}
+                class:list={[
+                  "shrink-0 rounded-md px-3 py-2 text-sm transition-colors",
+                  active === key
+                    ? "bg-clay text-paper"
+                    : "text-ink-soft hover:bg-paper-dim hover:text-ink",
+                ]}
+              >
+                {label}
+              </a>
+            ))
+          }
+        </nav>
+      </aside>
+
+      <!-- Content -->
+      <div class="flex min-w-0 flex-1 flex-col">
+        <header
+          class="flex items-center justify-between gap-4 border-b border-paper-dim px-6 py-4"
+        >
+          <p class="truncate text-sm text-ink-muted">{email}</p>
+          <form method="POST" action="/admin">
+            <input type="hidden" name="intent" value="signout" />
+            <button
+              type="submit"
+              class="rounded-md border border-paper-dim px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-clay hover:text-clay"
+            >
+              Sign out
+            </button>
+          </form>
+        </header>
+        <main class="flex-1 px-6 py-8">
+          <slot />
+        </main>
+      </div>
+    </div>
+
+    {
+      flash && (
+        <div
+          id="flash"
+          role="status"
+          class="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-clay/30 bg-ink px-4 py-3 text-sm text-paper shadow-lg"
+        >
+          <span class="text-clay-light">✓</span>
+          <span>{flash}</span>
+        </div>
+      )
+    }
+
+    <script>
+      // Auto-dismiss the flash banner and scrub ?flash= from the URL so a
+      // refresh or back-button doesn't replay it.
+      const flashEl = document.getElementById("flash");
+      if (flashEl) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("flash");
+        history.replaceState(null, "", url.toString() + url.hash);
+        setTimeout(() => {
+          flashEl.style.transition = "opacity 300ms";
+          flashEl.style.opacity = "0";
+          setTimeout(() => flashEl.remove(), 300);
+        }, 2500);
+      }
+    </script>
+  </body>
+</html>
+

@@ -1,0 +1,178 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import StatusPill from "../../../components/StatusPill.astro";
+import StatusSelect from "../../../components/StatusSelect.astro";
+import ActivityLog from "../../../components/ActivityLog.astro";
+import { requireAdmin } from "../../../lib/admin-auth";
+import { flashPath } from "../../../lib/flash";
+import {
+  getLead,
+  getClient,
+  listProjectsForLead,
+  setLeadStatus,
+  convertLeadToClient,
+  listNotes,
+  addNote,
+  deleteNote,
+  projectTypeLabel,
+  formatPrice,
+  formatDate,
+  LEAD_STATUSES,
+  type LeadStatus,
+} from "../../../lib/crm";
+
+export const prerender = false;
+
+const gate = await requireAdmin(Astro.request, Astro.cookies, (p) => Astro.redirect(p));
+if (gate instanceof Response) return gate;
+const { supabase, email } = gate;
+
+const id = Astro.params.id!;
+let error: string | null = null;
+let redirectTo: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const intent = String(form.get("intent") ?? "");
+  try {
+    if (intent === "status") {
+      await setLeadStatus(supabase, id, String(form.get("status") ?? "new") as LeadStatus);
+      redirectTo = flashPath(`/admin/leads/${id}`, "Status updated");
+    } else if (intent === "convert") {
+      const lead = await getLead(supabase, id);
+      if (!lead) throw new Error("Lead not found.");
+      const clientId = await convertLeadToClient(supabase, lead);
+      redirectTo = flashPath(`/admin/clients/${clientId}`, "Lead converted to client");
+    } else if (intent === "note") {
+      await addNote(supabase, "lead", id, String(form.get("body") ?? "").trim());
+      redirectTo = flashPath(`/admin/leads/${id}`, "Note added") + "#activity";
+    } else if (intent === "note-delete") {
+      await deleteNote(supabase, String(form.get("note_id") ?? ""));
+      redirectTo = flashPath(`/admin/leads/${id}`, "Note deleted") + "#activity";
+    } else if (intent === "signout") {
+      await supabase.auth.signOut();
+      return Astro.redirect("/login");
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Something went wrong.";
+  }
+  if (!error && redirectTo) return Astro.redirect(redirectTo);
+}
+
+const lead = await getLead(supabase, id);
+if (!lead) return Astro.redirect("/admin/leads");
+
+const [client, projects, notes] = await Promise.all([
+  lead.converted_client_id ? getClient(supabase, lead.converted_client_id) : Promise.resolve(null),
+  listProjectsForLead(supabase, id),
+  listNotes(supabase, "lead", id),
+]);
+
+const toneFor = (s: LeadStatus) =>
+  s === "new" ? "warm" : s === "won" ? "good" : s === "lost" ? "faded" : "neutral";
+---
+
+<AdminLayout title={lead.name} email={email} active="leads">
+  <p class="text-sm text-ink-muted">
+    <a href="/admin/leads" class="hover:text-clay">← Leads</a>
+  </p>
+
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <h1 class="font-display text-2xl font-semibold tracking-tight text-ink">{lead.name}</h1>
+      <StatusPill label={lead.status} tone={toneFor(lead.status)} />
+    </div>
+
+    <StatusSelect current={lead.status} options={LEAD_STATUSES} />
+  </div>
+
+  {
+    error && (
+      <p class="mt-4 rounded-md border border-clay/40 bg-clay/5 px-3 py-2 text-sm text-clay">
+        {error}
+      </p>
+    )
+  }
+
+  <dl class="mt-6 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-ink-muted">Email</dt>
+      <dd><a href={`mailto:${lead.email}`} class="text-ink hover:text-clay">{lead.email}</a></dd>
+    </div>
+    <div>
+      <dt class="text-ink-muted">Project type</dt>
+      <dd class="text-ink">{projectTypeLabel(lead.project_type)}</dd>
+    </div>
+    <div>
+      <dt class="text-ink-muted">Received</dt>
+      <dd class="text-ink">{formatDate(lead.created_at)}</dd>
+    </div>
+    <div>
+      <dt class="text-ink-muted">Client</dt>
+      <dd>
+        {
+          client ? (
+            <a href={`/admin/clients/${client.id}`} class="text-clay hover:underline">{client.name} →</a>
+          ) : (
+            <span class="text-ink-muted">Not yet a client</span>
+          )
+        }
+      </dd>
+    </div>
+  </dl>
+
+  {
+    lead.message && (
+      <div class="mt-6 rounded-xl border border-paper-dim p-5">
+        <h2 class="text-sm font-medium text-ink-soft">Original message</h2>
+        <p class="mt-2 whitespace-pre-line text-sm text-ink">{lead.message}</p>
+      </div>
+    )
+  }
+
+  {
+    !client && (
+      <form method="POST" class="mt-6">
+        <input type="hidden" name="intent" value="convert" />
+        <button
+          type="submit"
+          class="rounded-lg bg-clay px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-clay-light"
+        >
+          Convert to client
+        </button>
+        <span class="ml-3 text-sm text-ink-muted">Creates a client from this lead and marks it won.</span>
+      </form>
+    )
+  }
+
+  <!-- Originating projects -->
+  {
+    projects.length > 0 && (
+      <section class="mt-10">
+        <h2 class="font-display text-lg font-semibold text-ink">Projects from this lead</h2>
+        <table class="mt-3 w-full text-left text-sm">
+          <thead class="border-b border-paper-dim text-ink-muted">
+            <tr>
+              <th class="py-2 font-medium">Project</th>
+              <th class="py-2 font-medium">Status</th>
+              <th class="py-2 text-right font-medium">Build price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((p) => (
+              <tr class="border-b border-paper-dim/60">
+                <td class="py-2">
+                  <a href={`/admin/projects/${p.id}`} class="text-clay hover:underline">{p.name}</a>
+                </td>
+                <td class="py-2 text-ink-soft">{p.status}</td>
+                <td class="py-2 text-right text-ink">{formatPrice(p.build_price)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    )
+  }
+
+  <ActivityLog notes={notes} />
+</AdminLayout>

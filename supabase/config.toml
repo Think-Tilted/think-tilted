@@ -9,7 +9,10 @@ enable_signup = false
 minimum_password_length = 12
 
 [auth.email]
-# No email self-signup either.
+# NOTE: the email *provider* (password sign-in) must stay enabled in the
+# Supabase dashboard (Authentication -> Providers -> Email). This CLI version
+# doesn't expose that toggle, so it's not managed here — don't disable it.
+# Only the self-signup half is turned off below.
 enable_signup = false
 # Require verified emails before a session is granted.
 enable_confirmations = true

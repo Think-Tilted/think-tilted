@@ -1,0 +1,182 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import StatusPill from "../../../components/StatusPill.astro";
+import ActivityLog from "../../../components/ActivityLog.astro";
+import ConfirmButton from "../../../components/ConfirmButton.astro";
+import { requireAdmin } from "../../../lib/admin-auth";
+import { flashPath } from "../../../lib/flash";
+import {
+  getClient,
+  updateClient,
+  deleteClient,
+  listProjectsForClient,
+  listNotes,
+  addNote,
+  deleteNote,
+  formatPrice,
+  formatDate,
+  type ProjectStatus,
+} from "../../../lib/crm";
+
+export const prerender = false;
+
+const gate = await requireAdmin(Astro.request, Astro.cookies, (p) => Astro.redirect(p));
+if (gate instanceof Response) return gate;
+const { supabase, email } = gate;
+
+const id = Astro.params.id!;
+let error: string | null = null;
+let redirectTo: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const intent = String(form.get("intent") ?? "");
+  try {
+    if (intent === "update") {
+      await updateClient(supabase, id, {
+        name: String(form.get("name") ?? "").trim(),
+        contact_email: String(form.get("contact_email") ?? "").trim(),
+        notes: String(form.get("notes") ?? "").trim(),
+      });
+      redirectTo = flashPath(`/admin/clients/${id}`, "Changes saved");
+    } else if (intent === "delete") {
+      await deleteClient(supabase, id);
+      return Astro.redirect(flashPath("/admin/clients", "Client removed"));
+    } else if (intent === "note") {
+      await addNote(supabase, "client", id, String(form.get("body") ?? "").trim());
+      redirectTo = flashPath(`/admin/clients/${id}`, "Note added") + "#activity";
+    } else if (intent === "note-delete") {
+      await deleteNote(supabase, String(form.get("note_id") ?? ""));
+      redirectTo = flashPath(`/admin/clients/${id}`, "Note deleted") + "#activity";
+    } else if (intent === "signout") {
+      await supabase.auth.signOut();
+      return Astro.redirect("/login");
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Something went wrong.";
+  }
+  if (!error && redirectTo) return Astro.redirect(redirectTo);
+}
+
+const client = await getClient(supabase, id);
+if (!client) return Astro.redirect("/admin/clients");
+
+const [projects, notes] = await Promise.all([
+  listProjectsForClient(supabase, id),
+  listNotes(supabase, "client", id),
+]);
+
+const toneFor = (s: ProjectStatus) =>
+  s === "live" ? "good" : s === "building" ? "active" : s === "archived" ? "faded" : "warm";
+---
+
+<AdminLayout title={client.name} email={email} active="clients">
+  <p class="text-sm text-ink-muted">
+    <a href="/admin/clients" class="hover:text-clay">← Clients</a>
+  </p>
+
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <h1 class="font-display text-2xl font-semibold tracking-tight text-ink">{client.name}</h1>
+    <form method="POST">
+      <input type="hidden" name="intent" value="delete" />
+      <ConfirmButton label="Remove client" confirm="Projects stay but unlink. Remove?" />
+    </form>
+  </div>
+
+  <p class="mt-1 text-sm text-ink-muted">Client since {formatDate(client.created_at)}</p>
+
+  {
+    error && (
+      <p class="mt-4 rounded-md border border-clay/40 bg-clay/5 px-3 py-2 text-sm text-clay">
+        {error}
+      </p>
+    )
+  }
+
+  <!-- Editable details -->
+  <form method="POST" class="mt-6 rounded-xl border border-paper-dim p-5">
+    <input type="hidden" name="intent" value="update" />
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="name" class="block text-sm font-medium text-ink mb-1.5">Name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          value={client.name}
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="contact_email" class="block text-sm font-medium text-ink mb-1.5">Contact email</label>
+        <input
+          id="contact_email"
+          name="contact_email"
+          type="email"
+          value={client.contact_email}
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+    </div>
+    <div class="mt-4">
+      <label for="notes" class="block text-sm font-medium text-ink mb-1.5">Summary notes</label>
+      <textarea
+        id="notes"
+        name="notes"
+        rows="2"
+        class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay resize-none"
+      >{client.notes}</textarea>
+    </div>
+    <button
+      type="submit"
+      class="mt-4 rounded-lg bg-clay px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-clay-light"
+    >
+      Save changes
+    </button>
+  </form>
+
+  <!-- Projects -->
+  <section class="mt-10">
+    <div class="flex items-center justify-between">
+      <h2 class="font-display text-lg font-semibold text-ink">Projects</h2>
+      <a
+        href={`/admin/projects/new?client=${client.id}`}
+        class="rounded-md border border-paper-dim px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-clay hover:text-clay"
+      >
+        New project
+      </a>
+    </div>
+
+    {
+      projects.length === 0 ? (
+        <p class="mt-4 text-sm text-ink-muted">No projects for this client yet.</p>
+      ) : (
+        <table class="mt-3 w-full text-left text-sm">
+          <thead class="border-b border-paper-dim text-ink-muted">
+            <tr>
+              <th class="py-2 font-medium">Project</th>
+              <th class="py-2 font-medium">Status</th>
+              <th class="py-2 text-right font-medium">Build price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((p) => (
+              <tr class="border-b border-paper-dim/60">
+                <td class="py-2">
+                  <a href={`/admin/projects/${p.id}`} class="text-clay hover:underline">{p.name}</a>
+                </td>
+                <td class="py-2">
+                  <StatusPill label={p.status} tone={toneFor(p.status)} />
+                </td>
+                <td class="py-2 text-right text-ink">{formatPrice(p.build_price)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </section>
+
+  <ActivityLog notes={notes} />
+</AdminLayout>

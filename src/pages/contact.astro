@@ -1,5 +1,37 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { createSupabaseServerClient } from "../lib/supabase";
+import { submitLead } from "../lib/crm";
+
+// SSR so the form can write a lead via the anon RLS insert policy.
+export const prerender = false;
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+let sent = false;
+let error: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const name = String(form.get("name") ?? "").trim();
+  const email = String(form.get("email") ?? "").trim();
+
+  if (!name || !email) {
+    error = "Please share your name and email so we can reply.";
+  } else {
+    try {
+      await submitLead(supabase, {
+        name,
+        email,
+        project_type: String(form.get("project") ?? "other"),
+        message: String(form.get("message") ?? "").trim(),
+      });
+      sent = true;
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Something went wrong. Try again?";
+    }
+  }
+}
 ---
 
 <BaseLayout
@@ -14,65 +46,84 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       Tell us about your project and we'll be in touch within a day or two.
     </p>
 
-    <form class="mt-10 space-y-6" onsubmit="return false;">
-      <div class="flex flex-col gap-6">
-        <div>
-          <label for="name" class="block text-sm font-medium text-ink mb-1.5">Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            placeholder="Your name"
-            class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink placeholder:text-ink-muted outline-none focus:border-ink transition-colors"
-          />
+    {
+      sent ? (
+        <div class="mt-10 rounded-xl border border-paper-dim bg-paper-dim/30 p-6">
+          <p class="font-display text-xl font-semibold text-ink">Thanks — it's in.</p>
+          <p class="mt-2 text-ink-soft">
+            We read every message and will get back to you shortly. In the meantime,
+            feel free to <a href="/about" class="text-clay hover:underline">learn more about us</a>.
+          </p>
         </div>
-        <div>
-          <label for="email" class="block text-sm font-medium text-ink mb-1.5">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="you@example.com"
-            class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink placeholder:text-ink-muted outline-none focus:border-ink transition-colors"
-          />
-        </div>
-      </div>
+      ) : (
+        <form method="POST" class="mt-10 space-y-6">
+          {error && (
+            <p class="rounded-lg border border-clay/40 bg-clay/5 px-4 py-2.5 text-sm text-clay">
+              {error}
+            </p>
+          )}
 
-      <div>
-        <label for="project" class="block text-sm font-medium text-ink mb-1.5">What are you working on?</label>
-        <select
-          id="project"
-          name="project"
-          class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink outline-none focus:border-ink transition-colors appearance-none"
-        >
-          <option value="" disabled selected>Select a service</option>
-          <option value="brand">Brand identity</option>
-          <option value="web">Website</option>
-          <option value="both">Brand + website</option>
-          <option value="other">Something else</option>
-        </select>
-      </div>
+          <div class="flex flex-col gap-6">
+            <div>
+              <label for="name" class="block text-sm font-medium text-ink mb-1.5">Name</label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                placeholder="Your name"
+                class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink placeholder:text-ink-muted outline-none focus:border-ink transition-colors"
+              />
+            </div>
+            <div>
+              <label for="email" class="block text-sm font-medium text-ink mb-1.5">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink placeholder:text-ink-muted outline-none focus:border-ink transition-colors"
+              />
+            </div>
+          </div>
 
-      <div>
-        <label for="message" class="block text-sm font-medium text-ink mb-1.5">Tell us more</label>
-        <textarea
-          id="message"
-          name="message"
-          rows="5"
-          placeholder="What's the project? What's the timeline? Any details help."
-          class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink placeholder:text-ink-muted outline-none focus:border-ink transition-colors resize-none"
-        ></textarea>
-      </div>
+          <div>
+            <label for="project" class="block text-sm font-medium text-ink mb-1.5">What are you working on?</label>
+            <select
+              id="project"
+              name="project"
+              class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink outline-none focus:border-ink transition-colors appearance-none"
+            >
+              <option value="brand">Brand identity</option>
+              <option value="web">Website</option>
+              <option value="both">Brand + website</option>
+              <option value="other">Something else</option>
+            </select>
+          </div>
 
-      <button
-        type="submit"
-        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-clay text-paper px-8 py-3 rounded-lg text-sm font-medium hover:bg-clay-light transition-colors"
-      >
-        Send message
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    </form>
+          <div>
+            <label for="message" class="block text-sm font-medium text-ink mb-1.5">Tell us more</label>
+            <textarea
+              id="message"
+              name="message"
+              rows="5"
+              placeholder="What's the project? What's the timeline? Any details help."
+              class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink placeholder:text-ink-muted outline-none focus:border-ink transition-colors resize-none"
+            ></textarea>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-clay text-paper px-8 py-3 rounded-lg text-sm font-medium hover:bg-clay-light transition-colors"
+          >
+            Send message
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </form>
+      )
+    }
   </section>
 </BaseLayout>

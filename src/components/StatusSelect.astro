@@ -1,0 +1,44 @@
+---
+// A status <select> that submits its form on change — no separate Save button.
+// Wraps the form + hidden intent/id inputs so callers just pass the options.
+// Progressive: with JS off, a fallback "Save" button still submits it.
+interface Props {
+  /** Hidden id field sent with the change (omit on single-entity pages). */
+  id?: string;
+  current: string;
+  options: readonly string[];
+  intent?: string;
+  name?: string;
+}
+
+const { id, current, options, intent = "status", name = "status" } = Astro.props;
+const selectId = `status-${id ?? "single"}`;
+---
+
+<form method="POST" class="flex items-center gap-2" data-autosubmit>
+  <input type="hidden" name="intent" value={intent} />
+  {id && <input type="hidden" name="id" value={id} />}
+  <label for={selectId} class="sr-only">Status</label>
+  <select
+    id={selectId}
+    name={name}
+    class="rounded-md border border-paper-dim bg-paper px-2.5 py-1.5 text-sm text-ink outline-none focus:border-clay"
+  >
+    {options.map((o) => <option value={o} selected={o === current}>{o}</option>)}
+  </select>
+  <noscript>
+    <button
+      type="submit"
+      class="rounded-md border border-paper-dim px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-clay hover:text-clay"
+    >
+      Save
+    </button>
+  </noscript>
+</form>
+
+<script>
+  // Submit the wrapping form as soon as the status changes.
+  document.querySelectorAll<HTMLFormElement>("form[data-autosubmit]").forEach((form) => {
+    form.querySelector("select")?.addEventListener("change", () => form.submit());
+  });
+</script>

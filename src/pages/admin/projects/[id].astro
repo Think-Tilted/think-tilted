@@ -1,0 +1,262 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import StatusPill from "../../../components/StatusPill.astro";
+import ActivityLog from "../../../components/ActivityLog.astro";
+import ConfirmButton from "../../../components/ConfirmButton.astro";
+import { requireAdmin } from "../../../lib/admin-auth";
+import { flashPath } from "../../../lib/flash";
+import {
+  getProject,
+  getClient,
+  getLead,
+  updateProject,
+  deleteProject,
+  listClients,
+  listNotes,
+  addNote,
+  deleteNote,
+  formatPrice,
+  formatDate,
+  PROJECT_STATUSES,
+  type ProjectStatus,
+} from "../../../lib/crm";
+
+export const prerender = false;
+
+const gate = await requireAdmin(Astro.request, Astro.cookies, (p) => Astro.redirect(p));
+if (gate instanceof Response) return gate;
+const { supabase, email } = gate;
+
+const id = Astro.params.id!;
+let error: string | null = null;
+let redirectTo: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const intent = String(form.get("intent") ?? "");
+  try {
+    if (intent === "update") {
+      const current = await getProject(supabase, id);
+      if (!current) throw new Error("Project not found.");
+      const priceRaw = String(form.get("build_price") ?? "").trim();
+      await updateProject(supabase, id, {
+        client_id: String(form.get("client_id") ?? "") || null,
+        lead_id: current.lead_id,
+        name: String(form.get("name") ?? "").trim(),
+        tier: Number(form.get("tier") ?? 1) === 2 ? 2 : 1,
+        status: String(form.get("status") ?? "building") as ProjectStatus,
+        build_price: priceRaw ? Number(priceRaw) : null,
+        care_plan: String(form.get("care_plan") ?? "").trim(),
+        repo_url: String(form.get("repo_url") ?? "").trim(),
+        site_url: String(form.get("site_url") ?? "").trim(),
+      });
+      redirectTo = flashPath(`/admin/projects/${id}`, "Changes saved");
+    } else if (intent === "delete") {
+      await deleteProject(supabase, id);
+      return Astro.redirect(flashPath("/admin/projects", "Project deleted"));
+    } else if (intent === "note") {
+      await addNote(supabase, "project", id, String(form.get("body") ?? "").trim());
+      redirectTo = flashPath(`/admin/projects/${id}`, "Note added") + "#activity";
+    } else if (intent === "note-delete") {
+      await deleteNote(supabase, String(form.get("note_id") ?? ""));
+      redirectTo = flashPath(`/admin/projects/${id}`, "Note deleted") + "#activity";
+    } else if (intent === "signout") {
+      await supabase.auth.signOut();
+      return Astro.redirect("/login");
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Something went wrong.";
+  }
+  if (!error && redirectTo) return Astro.redirect(redirectTo);
+}
+
+const project = await getProject(supabase, id);
+if (!project) return Astro.redirect("/admin/projects");
+
+const [clients, client, lead, notes] = await Promise.all([
+  listClients(supabase),
+  project.client_id ? getClient(supabase, project.client_id) : Promise.resolve(null),
+  project.lead_id ? getLead(supabase, project.lead_id) : Promise.resolve(null),
+  listNotes(supabase, "project", id),
+]);
+
+const toneFor = (s: ProjectStatus) =>
+  s === "live" ? "good" : s === "building" ? "active" : s === "archived" ? "faded" : "warm";
+---
+
+<AdminLayout title={project.name} email={email} active="projects">
+  <p class="text-sm text-ink-muted">
+    <a href="/admin/projects" class="hover:text-clay">← Projects</a>
+  </p>
+
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <h1 class="font-display text-2xl font-semibold tracking-tight text-ink">{project.name}</h1>
+      <StatusPill label={`Tier ${project.tier}`} tone="neutral" />
+      <StatusPill label={project.status} tone={toneFor(project.status)} />
+    </div>
+    <form method="POST">
+      <input type="hidden" name="intent" value="delete" />
+      <ConfirmButton label="Delete project" confirm="Delete this project?" />
+    </form>
+  </div>
+
+  <p class="mt-1 text-sm text-ink-muted">Created {formatDate(project.created_at)}</p>
+
+  {
+    error && (
+      <p class="mt-4 rounded-md border border-clay/40 bg-clay/5 px-3 py-2 text-sm text-clay">
+        {error}
+      </p>
+    )
+  }
+
+  <!-- Relationships -->
+  <dl class="mt-6 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-ink-muted">Client</dt>
+      <dd>
+        {
+          client ? (
+            <a href={`/admin/clients/${client.id}`} class="text-clay hover:underline">{client.name} →</a>
+          ) : (
+            <span class="text-ink-muted">Unlinked</span>
+          )
+        }
+      </dd>
+    </div>
+    <div>
+      <dt class="text-ink-muted">Originating lead</dt>
+      <dd>
+        {
+          lead ? (
+            <a href={`/admin/leads/${lead.id}`} class="text-clay hover:underline">{lead.name} →</a>
+          ) : (
+            <span class="text-ink-muted">None</span>
+          )
+        }
+      </dd>
+    </div>
+    <div>
+      <dt class="text-ink-muted">Build price</dt>
+      <dd class="text-ink">{formatPrice(project.build_price)}</dd>
+    </div>
+    <div>
+      <dt class="text-ink-muted">Links</dt>
+      <dd class="flex gap-4">
+        {
+          project.site_url ? (
+            <a href={project.site_url} target="_blank" rel="noopener noreferrer" class="text-clay hover:underline">Live ↗</a>
+          ) : (
+            <span class="text-ink-muted">No live URL</span>
+          )
+        }
+        {
+          project.repo_url && (
+            <a href={project.repo_url} target="_blank" rel="noopener noreferrer" class="text-ink-soft hover:text-clay">Repo ↗</a>
+          )
+        }
+      </dd>
+    </div>
+  </dl>
+
+  <!-- Editable details -->
+  <form method="POST" class="mt-6 rounded-xl border border-paper-dim p-5">
+    <input type="hidden" name="intent" value="update" />
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="sm:col-span-2">
+        <label for="name" class="block text-sm font-medium text-ink mb-1.5">Project name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          value={project.name}
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="client_id" class="block text-sm font-medium text-ink mb-1.5">Client</label>
+        <select
+          id="client_id"
+          name="client_id"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        >
+          <option value="">— none —</option>
+          {clients.map((c) => <option value={c.id} selected={c.id === project.client_id}>{c.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label for="tier" class="block text-sm font-medium text-ink mb-1.5">Tier</label>
+        <select
+          id="tier"
+          name="tier"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        >
+          <option value="1" selected={project.tier === 1}>Tier 1 — static</option>
+          <option value="2" selected={project.tier === 2}>Tier 2 — dynamic</option>
+        </select>
+      </div>
+      <div>
+        <label for="status" class="block text-sm font-medium text-ink mb-1.5">Status</label>
+        <select
+          id="status"
+          name="status"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        >
+          {PROJECT_STATUSES.map((s) => <option value={s} selected={s === project.status}>{s}</option>)}
+        </select>
+      </div>
+      <div>
+        <label for="build_price" class="block text-sm font-medium text-ink mb-1.5">Build price (USD)</label>
+        <input
+          id="build_price"
+          name="build_price"
+          type="number"
+          min="0"
+          step="100"
+          value={project.build_price ?? ""}
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="care_plan" class="block text-sm font-medium text-ink mb-1.5">Care plan</label>
+        <input
+          id="care_plan"
+          name="care_plan"
+          type="text"
+          value={project.care_plan}
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="repo_url" class="block text-sm font-medium text-ink mb-1.5">Repo URL</label>
+        <input
+          id="repo_url"
+          name="repo_url"
+          type="url"
+          value={project.repo_url}
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="site_url" class="block text-sm font-medium text-ink mb-1.5">Live URL</label>
+        <input
+          id="site_url"
+          name="site_url"
+          type="url"
+          value={project.site_url}
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+    </div>
+    <button
+      type="submit"
+      class="mt-4 rounded-lg bg-clay px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-clay-light"
+    >
+      Save changes
+    </button>
+  </form>
+
+  <ActivityLog notes={notes} />
+</AdminLayout>

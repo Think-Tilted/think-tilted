@@ -1,0 +1,67 @@
+---
+// A destructive submit button with an inline, styled confirm step — replaces
+// the browser's native confirm() so the interaction matches the site's look.
+// First click reveals "Sure? Yes / No"; "Yes" submits the enclosing form.
+//
+// Drop it inside a <form method="POST"> alongside its hidden inputs. The whole
+// thing is progressive: with JS off it falls back to a normal submit button.
+interface Props {
+  label: string;
+  confirm?: string;
+  /** When true, render as a compact icon-style trigger (e.g. a ✕). */
+  compact?: boolean;
+}
+
+const { label, confirm = "Sure?", compact = false } = Astro.props;
+
+const triggerClass = compact
+  ? "rounded-md border border-paper-dim px-3 py-1.5 text-sm text-ink-muted transition-colors hover:border-clay hover:text-clay"
+  : "rounded-md border border-paper-dim px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-clay hover:text-clay";
+---
+
+<span class="confirm inline-flex items-center gap-2" data-confirm>
+  <button type="button" class={triggerClass} data-confirm-trigger aria-label={label}>
+    {label}
+  </button>
+  <span class="hidden items-center gap-2 text-sm text-ink-soft" data-confirm-prompt>
+    <span>{confirm}</span>
+    <button
+      type="submit"
+      class="rounded-md bg-clay px-3 py-1.5 text-sm font-medium text-paper transition-colors hover:bg-clay-light"
+    >
+      Yes
+    </button>
+    <button
+      type="button"
+      class="rounded-md border border-paper-dim px-3 py-1.5 text-sm text-ink-soft transition-colors hover:border-clay hover:text-clay"
+      data-confirm-cancel
+    >
+      No
+    </button>
+  </span>
+</span>
+
+<script>
+  // Toggle each confirm widget between its trigger and its inline prompt.
+  // Delegated once per page; works for any number of ConfirmButtons.
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+
+    const trigger = target.closest("[data-confirm-trigger]");
+    if (trigger) {
+      const root = trigger.closest("[data-confirm]");
+      root?.querySelector<HTMLElement>("[data-confirm-trigger]")?.classList.add("hidden");
+      root?.querySelector<HTMLElement>("[data-confirm-prompt]")?.classList.remove("hidden");
+      root?.querySelector<HTMLElement>("[data-confirm-prompt]")?.classList.add("inline-flex");
+      return;
+    }
+
+    const cancel = target.closest("[data-confirm-cancel]");
+    if (cancel) {
+      const root = cancel.closest("[data-confirm]");
+      root?.querySelector<HTMLElement>("[data-confirm-prompt]")?.classList.add("hidden");
+      root?.querySelector<HTMLElement>("[data-confirm-prompt]")?.classList.remove("inline-flex");
+      root?.querySelector<HTMLElement>("[data-confirm-trigger]")?.classList.remove("hidden");
+    }
+  });
+</script>

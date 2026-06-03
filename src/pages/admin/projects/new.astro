@@ -1,0 +1,172 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { requireAdmin } from "../../../lib/admin-auth";
+import {
+  createProject,
+  listClients,
+  listLeads,
+  PROJECT_STATUSES,
+  type ProjectStatus,
+} from "../../../lib/crm";
+
+export const prerender = false;
+
+const gate = await requireAdmin(Astro.request, Astro.cookies, (p) => Astro.redirect(p));
+if (gate instanceof Response) return gate;
+const { supabase, email } = gate;
+
+let error: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const intent = String(form.get("intent") ?? "");
+  try {
+    if (intent === "create") {
+      const priceRaw = String(form.get("build_price") ?? "").trim();
+      await createProject(supabase, {
+        client_id: String(form.get("client_id") ?? "") || null,
+        lead_id: String(form.get("lead_id") ?? "") || null,
+        name: String(form.get("name") ?? "").trim(),
+        tier: Number(form.get("tier") ?? 1) === 2 ? 2 : 1,
+        status: String(form.get("status") ?? "building") as ProjectStatus,
+        build_price: priceRaw ? Number(priceRaw) : null,
+        care_plan: String(form.get("care_plan") ?? "").trim(),
+        repo_url: String(form.get("repo_url") ?? "").trim(),
+        site_url: String(form.get("site_url") ?? "").trim(),
+      });
+      return Astro.redirect("/admin/projects");
+    } else if (intent === "signout") {
+      await supabase.auth.signOut();
+      return Astro.redirect("/login");
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Something went wrong.";
+  }
+}
+
+const [clients, leads] = await Promise.all([listClients(supabase), listLeads(supabase)]);
+
+// Pre-selection from query params (e.g. arriving from a client or lead page).
+const preClient = Astro.url.searchParams.get("client") ?? "";
+const preLead = Astro.url.searchParams.get("lead") ?? "";
+---
+
+<AdminLayout title="New project" email={email} active="projects">
+  <p class="text-sm text-ink-muted">
+    <a href="/admin/projects" class="hover:text-clay">← Projects</a>
+  </p>
+
+  <h1 class="mt-2 font-display text-2xl font-semibold tracking-tight text-ink">New project</h1>
+
+  {
+    error && (
+      <p class="mt-4 rounded-md border border-clay/40 bg-clay/5 px-3 py-2 text-sm text-clay">
+        {error}
+      </p>
+    )
+  }
+
+  <form method="POST" class="mt-6 rounded-xl border border-paper-dim p-5">
+    <input type="hidden" name="intent" value="create" />
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div class="sm:col-span-2">
+        <label for="name" class="block text-sm font-medium text-ink mb-1.5">Project name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="client_id" class="block text-sm font-medium text-ink mb-1.5">Client</label>
+        <select
+          id="client_id"
+          name="client_id"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        >
+          <option value="">— none —</option>
+          {clients.map((c) => <option value={c.id} selected={c.id === preClient}>{c.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label for="lead_id" class="block text-sm font-medium text-ink mb-1.5">Originating lead</label>
+        <select
+          id="lead_id"
+          name="lead_id"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        >
+          <option value="">— none —</option>
+          {leads.map((l) => <option value={l.id} selected={l.id === preLead}>{l.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label for="tier" class="block text-sm font-medium text-ink mb-1.5">Tier</label>
+        <select
+          id="tier"
+          name="tier"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        >
+          <option value="1">Tier 1 — static</option>
+          <option value="2">Tier 2 — dynamic</option>
+        </select>
+      </div>
+      <div>
+        <label for="status" class="block text-sm font-medium text-ink mb-1.5">Status</label>
+        <select
+          id="status"
+          name="status"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        >
+          {PROJECT_STATUSES.map((s) => <option value={s} selected={s === "building"}>{s}</option>)}
+        </select>
+      </div>
+      <div>
+        <label for="build_price" class="block text-sm font-medium text-ink mb-1.5">Build price (USD)</label>
+        <input
+          id="build_price"
+          name="build_price"
+          type="number"
+          min="0"
+          step="100"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="care_plan" class="block text-sm font-medium text-ink mb-1.5">Care plan</label>
+        <input
+          id="care_plan"
+          name="care_plan"
+          type="text"
+          placeholder="e.g. $150/mo dynamic care"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink placeholder:text-ink-muted outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="repo_url" class="block text-sm font-medium text-ink mb-1.5">Repo URL</label>
+        <input
+          id="repo_url"
+          name="repo_url"
+          type="url"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="site_url" class="block text-sm font-medium text-ink mb-1.5">Live URL</label>
+        <input
+          id="site_url"
+          name="site_url"
+          type="url"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+    </div>
+    <button
+      type="submit"
+      class="mt-4 rounded-lg bg-clay px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-clay-light"
+    >
+      Create project
+    </button>
+  </form>
+</AdminLayout>

@@ -1,0 +1,83 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { createSupabaseServerClient } from "../lib/supabase";
+
+// SSR: renders the form and handles its POST.
+export const prerender = false;
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+// Already signed in? Go straight to the back office.
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+if (user) return Astro.redirect("/admin");
+
+let error: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const email = String(form.get("email") ?? "");
+  const password = String(form.get("password") ?? "");
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    // Generic message — don't reveal whether the email exists.
+    error = "Invalid email or password.";
+  } else {
+    return Astro.redirect("/admin");
+  }
+}
+---
+
+<BaseLayout title="Sign in" description="Think Tilted back office.">
+  <section class="mx-auto max-w-sm py-16">
+    <h1 class="font-display text-3xl font-semibold tracking-tight text-ink">
+      Back office
+    </h1>
+    <p class="mt-2 text-sm text-ink-soft">For Think Tilted. Not for clients.</p>
+
+    {
+      error && (
+        <p class="mt-6 rounded-md border border-clay/40 bg-clay/5 px-3 py-2 text-sm text-clay">
+          {error}
+        </p>
+      )
+    }
+
+    <form method="POST" class="mt-8 space-y-5">
+      <div>
+        <label for="email" class="block text-sm font-medium text-ink mb-1.5">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autocomplete="email"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink outline-none focus:border-ink transition-colors"
+        />
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium text-ink mb-1.5">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-4 py-2.5 text-ink outline-none focus:border-ink transition-colors"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full rounded-lg bg-clay px-4 py-3 text-sm font-medium text-paper transition-colors hover:bg-clay-light"
+      >
+        Sign in
+      </button>
+    </form>
+  </section>
+</BaseLayout>

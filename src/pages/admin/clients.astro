@@ -1,0 +1,146 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import ConfirmButton from "../../components/ConfirmButton.astro";
+import { requireAdmin } from "../../lib/admin-auth";
+import { flashPath } from "../../lib/flash";
+import {
+  listClients,
+  createClient,
+  deleteClient,
+  listProjects,
+  formatDate,
+} from "../../lib/crm";
+
+export const prerender = false;
+
+const gate = await requireAdmin(Astro.request, Astro.cookies, (p) => Astro.redirect(p));
+if (gate instanceof Response) return gate;
+const { supabase, email } = gate;
+
+let error: string | null = null;
+let redirectTo: string | null = null;
+
+if (Astro.request.method === "POST") {
+
+  const form = await Astro.request.formData();
+  const intent = String(form.get("intent") ?? "");
+  try {
+    if (intent === "create") {
+      await createClient(supabase, {
+        name: String(form.get("name") ?? "").trim(),
+        contact_email: String(form.get("contact_email") ?? "").trim(),
+        notes: String(form.get("notes") ?? "").trim(),
+      });
+      redirectTo = flashPath("/admin/clients", "Client added");
+    } else if (intent === "delete") {
+      await deleteClient(supabase, String(form.get("id") ?? ""));
+      redirectTo = flashPath("/admin/clients", "Client removed");
+    } else if (intent === "signout") {
+      await supabase.auth.signOut();
+      return Astro.redirect("/login");
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : "Something went wrong.";
+  }
+  if (!error && redirectTo) return Astro.redirect(redirectTo);
+}
+
+
+const [clients, projects] = await Promise.all([
+  listClients(supabase),
+  listProjects(supabase),
+]);
+
+// How many projects each client has, for a quick at-a-glance count.
+const projectCount = (clientId: string) =>
+  projects.filter((p) => p.client_id === clientId).length;
+---
+
+<AdminLayout title="Clients" email={email} active="clients">
+  <h1 class="font-display text-2xl font-semibold tracking-tight text-ink">Clients</h1>
+
+  {
+    error && (
+      <p class="mt-4 rounded-md border border-clay/40 bg-clay/5 px-3 py-2 text-sm text-clay">
+        {error}
+      </p>
+    )
+  }
+
+  <!-- Add client -->
+  <form method="POST" class="mt-8 rounded-xl border border-paper-dim p-5">
+    <input type="hidden" name="intent" value="create" />
+    <h2 class="font-display text-lg font-semibold text-ink">Add a client</h2>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="name" class="block text-sm font-medium text-ink mb-1.5">Name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+      <div>
+        <label for="contact_email" class="block text-sm font-medium text-ink mb-1.5">Contact email</label>
+        <input
+          id="contact_email"
+          name="contact_email"
+          type="email"
+          class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay"
+        />
+      </div>
+    </div>
+    <div class="mt-4">
+      <label for="notes" class="block text-sm font-medium text-ink mb-1.5">Notes</label>
+      <textarea
+        id="notes"
+        name="notes"
+        rows="2"
+        class="w-full rounded-lg border border-paper-dim bg-paper px-3 py-2 text-ink outline-none focus:border-clay resize-none"
+      ></textarea>
+    </div>
+    <button
+      type="submit"
+      class="mt-4 rounded-lg bg-clay px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-clay-light"
+    >
+      Add client
+    </button>
+  </form>
+
+  {
+    clients.length === 0 ? (
+      <p class="mt-8 text-sm text-ink-muted">No clients yet.</p>
+    ) : (
+      <ul class="mt-8 space-y-3">
+        {clients.map((client) => (
+          <li class="flex items-start justify-between gap-4 rounded-xl border border-paper-dim p-5">
+            <div class="min-w-0">
+              <h3 class="font-display text-lg font-semibold text-ink">
+                <a href={`/admin/clients/${client.id}`} class="hover:text-clay">{client.name}</a>
+              </h3>
+              <p class="mt-0.5 text-sm text-ink-soft">
+                {client.contact_email ? (
+                  <a href={`mailto:${client.contact_email}`} class="hover:text-clay">{client.contact_email}</a>
+                ) : (
+                  <span class="text-ink-muted">No email</span>
+                )}
+                <span class="text-ink-muted">
+                  {" · "}{projectCount(client.id)} project{projectCount(client.id) === 1 ? "" : "s"}
+                  {" · since "}{formatDate(client.created_at)}
+                </span>
+              </p>
+              {client.notes && <p class="mt-2 text-sm text-ink-soft">{client.notes}</p>}
+            </div>
+            <form method="POST" class="shrink-0">
+              <input type="hidden" name="intent" value="delete" />
+              <input type="hidden" name="id" value={client.id} />
+              <ConfirmButton label="Remove" confirm="Remove client?" />
+            </form>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</AdminLayout>

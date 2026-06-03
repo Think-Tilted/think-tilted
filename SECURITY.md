@@ -28,6 +28,10 @@ allowlist (seeded with the admin the upgrade created).
 
 - Public self-signup disabled — the only account is the seeded admin.
 - Email confirmation required, secure password change, 12-char min password.
+- The email/password provider itself stays enabled (that's how the admin signs
+  in) — it's set via the Management API, not `config.toml`. If logins ever fail
+  with "Email logins are disabled," re-enable it in the Supabase dashboard
+  (Authentication → Providers → Email) and keep signup off.
 - TOTP MFA available for admins to enroll.
 
 ## Keys
